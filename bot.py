@@ -1,241 +1,374 @@
+import os
+
 from telegram import (
     Update,
-    ReplyKeyboardMarkup,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton
+    InlineKeyboardButton,
+    InlineKeyboardMarkup
 )
 
 from telegram.ext import (
     Application,
     CommandHandler,
-    MessageHandler,
     CallbackQueryHandler,
+    MessageHandler,
     ContextTypes,
     filters
 )
 
-# =====================================
-# BOT SETTINGS
-# =====================================
-
-import os
+# =========================================
+# SETTINGS
+# =========================================
 
 TOKEN = os.getenv("BOT_TOKEN")
 
 ADMIN_ID = 2007497975
 
-# =====================================
-# GAME DATA
-# =====================================
+# =========================================
+# USER DATA
+# =========================================
 
-games = {
+user_orders = {}
 
-    "🔥 Free Fire": {
-        "100 Diamond": "1000 Ks",
-        "310 Diamond": "3000 Ks",
-        "520 Diamond": "5000 Ks"
-    },
-
-    "⚽ eFootball": {
-        "100 Coins": "2000 Ks",
-        "500 Coins": "8000 Ks"
-    },
-
-    "🔫 PUBG Mobile": {
-        "60 UC": "1500 Ks",
-        "325 UC": "7000 Ks"
-    }
-}
-
-# =====================================
+# =========================================
 # START
-# =====================================
+# =========================================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = [
-        ["🎮 Buy Game"],
-        ["📞 Contact"]
+
+        [
+            InlineKeyboardButton(
+                "🔥 Free Fire",
+                callback_data="game_ff"
+            )
+        ],
+
+        [
+            InlineKeyboardButton(
+                "📱 MLBB",
+                callback_data="game_ml"
+            )
+        ],
+
+        [
+            InlineKeyboardButton(
+                "📞 Contact Admin",
+                callback_data="contact"
+            )
+        ]
+
     ]
 
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True
-    )
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        "🎮 Welcome To EngageX Hub\n\nChoose Option:",
+        "🎮 Welcome To EngageX Hub\n\nChoose Game:",
         reply_markup=reply_markup
     )
 
 
-# =====================================
-# HANDLE MESSAGE
-# =====================================
+# =========================================
+# BUTTON HANDLER
+# =========================================
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def button_handler(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
 
-    text = update.message.text
+    query = update.callback_query
 
-    # =================================
-    # BUY GAME
-    # =================================
+    await query.answer()
 
-    if text == "🎮 Buy Game":
+    data = query.data
 
-        keyboard = []
+    user_id = query.from_user.id
 
-        for game in games.keys():
-            keyboard.append([game])
+    # =====================================
+    # FREE FIRE
+    # =====================================
 
-        keyboard.append(["❌ Cancel"])
+    if data == "game_ff":
 
-        reply_markup = ReplyKeyboardMarkup(
-            keyboard,
-            resize_keyboard=True
-        )
+        keyboard = [
 
-        await update.message.reply_text(
-            "🎮 Choose Game:",
+            [
+                InlineKeyboardButton(
+                    "100 Diamond - 1000 Ks",
+                    callback_data="ff_100"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    "310 Diamond - 3000 Ks",
+                    callback_data="ff_310"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    "520 Diamond - 5000 Ks",
+                    callback_data="ff_520"
+                )
+            ]
+
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.message.reply_text(
+            "🔥 Choose Free Fire Package",
             reply_markup=reply_markup
         )
 
-        return
+    # =====================================
+    # MLBB
+    # =====================================
 
-    # =================================
+    elif data == "game_ml":
+
+        keyboard = [
+
+            [
+                InlineKeyboardButton(
+                    "86 Diamond - 2000 Ks",
+                    callback_data="ml_86"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    "172 Diamond - 4000 Ks",
+                    callback_data="ml_172"
+                )
+            ]
+
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.message.reply_text(
+            "📱 Choose MLBB Package",
+            reply_markup=reply_markup
+        )
+
+    # =====================================
     # CONTACT
-    # =================================
+    # =====================================
 
-    elif text == "📞 Contact":
+    elif data == "contact":
 
-        await update.message.reply_text(
-            "📞 Admin Contact:\n@ar_thur21"
+        await query.message.reply_text(
+            "📞 Admin Username:\n@ar_thur21"
         )
 
-        return
+    # =====================================
+    # FREE FIRE PACKAGES
+    # =====================================
 
-    # =================================
-    # CANCEL
-    # =================================
+    elif data == "ff_100":
 
-    elif text == "❌ Cancel":
+        user_orders[user_id] = {
+            "game": "Free Fire",
+            "package": "100 Diamond",
+            "price": "1000 Ks"
+        }
 
-        await start(update, context)
-        return
-
-    # =================================
-    # GAME SELECT
-    # =================================
-
-    elif text in games:
-
-        context.user_data["game"] = text
-
-        keyboard = []
-
-        for package in games[text]:
-            keyboard.append([package])
-
-        keyboard.append(["❌ Cancel"])
-
-        reply_markup = ReplyKeyboardMarkup(
-            keyboard,
-            resize_keyboard=True
+        await query.message.reply_text(
+            "🆔 Send Your Free Fire ID"
         )
 
-        await update.message.reply_text(
-            f"💎 Choose Package For {text}",
-            reply_markup=reply_markup
+        context.user_data["waiting_id"] = True
+
+    elif data == "ff_310":
+
+        user_orders[user_id] = {
+            "game": "Free Fire",
+            "package": "310 Diamond",
+            "price": "3000 Ks"
+        }
+
+        await query.message.reply_text(
+            "🆔 Send Your Free Fire ID"
         )
 
-        return
+        context.user_data["waiting_id"] = True
 
-    # =================================
-    # PACKAGE SELECT
-    # =================================
+    elif data == "ff_520":
 
-    game = context.user_data.get("game")
+        user_orders[user_id] = {
+            "game": "Free Fire",
+            "package": "520 Diamond",
+            "price": "5000 Ks"
+        }
 
-    if game and text in games[game]:
+        await query.message.reply_text(
+            "🆔 Send Your Free Fire ID"
+        )
 
-        context.user_data["package"] = text
+        context.user_data["waiting_id"] = True
 
-        price = games[game][text]
+    # =====================================
+    # MLBB PACKAGES
+    # =====================================
 
-        context.user_data["price"] = price
+    elif data == "ml_86":
 
-        await update.message.reply_text(
-            f"""
-✅ Order Summary
+        user_orders[user_id] = {
+            "game": "MLBB",
+            "package": "86 Diamond",
+            "price": "2000 Ks"
+        }
 
-🎮 Game: {game}
+        await query.message.reply_text(
+            "🆔 Send Your MLBB ID"
+        )
 
-💎 Package: {text}
+        context.user_data["waiting_id"] = True
 
-💰 Price: {price}
+    elif data == "ml_172":
 
-🆔 Send Your Game ID:
+        user_orders[user_id] = {
+            "game": "MLBB",
+            "package": "172 Diamond",
+            "price": "4000 Ks"
+        }
+
+        await query.message.reply_text(
+            "🆔 Send Your MLBB ID"
+        )
+
+        context.user_data["waiting_id"] = True
+
+    # =====================================
+    # CONFIRM ORDER
+    # =====================================
+
+    elif data.startswith("confirm_"):
+
+        customer_id = int(
+            data.split("_")[1]
+        )
+
+        keyboard = InlineKeyboardMarkup([
+
+            [
+                InlineKeyboardButton(
+                    "📦 Delivered",
+                    callback_data=f"deliver_{customer_id}"
+                )
+            ]
+
+        ])
+
+        await context.bot.send_message(
+            chat_id=customer_id,
+            text="""
+✅ PAYMENT CONFIRMED
+
+⏳ Your order is processing.
 """
         )
 
-        context.user_data["waiting_game_id"] = True
+        await query.edit_message_reply_markup(
+            reply_markup=keyboard
+        )
 
-        return
+    # =====================================
+    # DELIVER ORDER
+    # =====================================
 
-    # =================================
+    elif data.startswith("deliver_"):
+
+        customer_id = int(
+            data.split("_")[1]
+        )
+
+        await context.bot.send_message(
+            chat_id=customer_id,
+            text="""
+🎉 ORDER COMPLETED
+
+✅ Your topup has been delivered.
+
+❤️ Thank you for buying.
+"""
+        )
+
+        await query.edit_message_reply_markup(
+            reply_markup=None
+        )
+
+
+# =========================================
+# MESSAGE HANDLER
+# =========================================
+
+async def message_handler(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    user_id = update.message.from_user.id
+
+    # =====================================
     # GAME ID
-    # =================================
+    # =====================================
 
-    if context.user_data.get("waiting_game_id"):
+    if context.user_data.get("waiting_id"):
 
-        context.user_data["game_id"] = text
+        game_id = update.message.text
 
-        context.user_data["waiting_game_id"] = False
+        user_orders[user_id]["game_id"] = game_id
 
-        await update.message.reply_text(
-            """
-💳 PAYMENT INFO
-
-WavePay - 09xxxxxxxxx
-
-📸 Send Payment Screenshot After Payment
-"""
-        )
+        context.user_data["waiting_id"] = False
 
         context.user_data["waiting_payment"] = True
 
+        await update.message.reply_text(
+            """
+💰 PAYMENT INFO
+
+WavePay - 09xxxxxxxxx
+
+📸 Send Payment Screenshot
+"""
+        )
+
         return
 
-    # =================================
+    # =====================================
     # WAIT PAYMENT
-    # =================================
+    # =====================================
 
     if context.user_data.get("waiting_payment"):
 
         await update.message.reply_text(
-            "❌ Please send payment screenshot."
+            "📸 Please send payment screenshot image."
         )
 
-        return
 
-
-# =====================================
+# =========================================
 # PHOTO HANDLER
-# =====================================
+# =========================================
 
-async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def photo_handler(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
 
-    if not context.user_data.get("waiting_payment"):
+    user_id = update.message.from_user.id
+
+    if not context.user_data.get(
+        "waiting_payment"
+    ):
         return
 
-    user = update.effective_user
+    order = user_orders[user_id]
 
-    photo = update.message.photo[-1].file_id
-
-    game = context.user_data.get("game")
-    package = context.user_data.get("package")
-    price = context.user_data.get("price")
-    game_id = context.user_data.get("game_id")
+    user = update.message.from_user
 
     username = user.username
 
@@ -251,25 +384,27 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 🆔 Telegram ID: {user.id}
 
-🎮 Game: {game}
+🎮 Game: {order['game']}
 
-💎 Package: {package}
+💎 Package: {order['package']}
 
-💰 Price: {price}
+💰 Price: {order['price']}
 
-🎯 Game ID: {game_id}
+🎯 Game ID: {order['game_id']}
 """
 
     keyboard = InlineKeyboardMarkup([
+
         [
             InlineKeyboardButton(
-                "✅ Confirm Order",
+                "✅ Confirm",
                 callback_data=f"confirm_{user.id}"
             )
         ]
+
     ])
 
-    # send to admin
+    photo = update.message.photo[-1].file_id
 
     await context.bot.send_photo(
         chat_id=ADMIN_ID,
@@ -280,106 +415,40 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         """
-✅ Payment Screenshot Sent
+✅ Screenshot Received
 
-⏳ Waiting For Admin Confirm...
+⏳ Waiting Admin Confirm
 """
     )
 
     context.user_data["waiting_payment"] = False
 
 
-# =====================================
-# BUTTON HANDLER
-# =====================================
-
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    query = update.callback_query
-
-    await query.answer()
-
-    data = query.data
-
-    # =================================
-    # CONFIRM ORDER
-    # =================================
-
-    if data.startswith("confirm_"):
-
-        user_id = int(data.split("_")[1])
-
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(
-                    "📦 Delivered",
-                    callback_data=f"delivered_{user_id}"
-                )
-            ]
-        ])
-
-        # send to customer
-
-        await context.bot.send_message(
-            chat_id=user_id,
-            text="""
-✅ PAYMENT CONFIRMED
-
-⏳ Your order is now processing.
-"""
-        )
-
-        # edit admin message
-
-        await query.edit_message_caption(
-            caption=query.message.caption + "\n\n✅ PAYMENT CONFIRMED",
-            reply_markup=keyboard
-        )
-
-    # =================================
-    # DELIVERED
-    # =================================
-
-    elif data.startswith("delivered_"):
-
-        user_id = int(data.split("_")[1])
-
-        # send to customer
-
-        await context.bot.send_message(
-            chat_id=user_id,
-            text="""
-🎉 ORDER COMPLETED
-
-✅ Your order has been delivered successfully.
-
-❤️ Thank you for buying.
-"""
-        )
-
-        # edit admin message
-
-        await query.edit_message_caption(
-            caption=query.message.caption + "\n\n📦 ORDER DELIVERED"
-        )
-
-
-# =====================================
+# =========================================
 # MAIN
-# =====================================
+# =========================================
 
 def main():
 
-    app = Application.builder().token(TOKEN).build()
+    app = Application.builder().token(
+        TOKEN
+    ).build()
 
     app.add_handler(
         CommandHandler("start", start)
     )
 
     app.add_handler(
+        CallbackQueryHandler(
+            button_handler
+        )
+    )
+
+    app.add_handler(
         MessageHandler(
-            filters.TEXT & ~filters.COMMAND,
-            handle_message
+            filters.TEXT &
+            ~filters.COMMAND,
+            message_handler
         )
     )
 
@@ -390,14 +459,14 @@ def main():
         )
     )
 
-    app.add_handler(
-        CallbackQueryHandler(button_handler)
-    )
-
     print("✅ BOT RUNNING...")
 
     app.run_polling()
 
+
+# =========================================
+# RUN
+# =========================================
 
 if __name__ == "__main__":
     main()
